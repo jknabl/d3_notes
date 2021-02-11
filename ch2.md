@@ -1,5 +1,7 @@
 # Chapter 2: The Ubiquitous Language
 
+[<-- Back](README.md)
+
 * There is usually a communication barrier between developers and domain experts. Developers are thinking in terms of technical stuff, classes and code. Domain experts are thinking in terms of their own mental models. The two parties need a common language. 
 * "Translating" one type of specialized knowledge to another does not help.
   * e.g., "translating" what you mean by some design pattern you mentioned to a domain expert isn't going to help things, it's going to confuse them. 
