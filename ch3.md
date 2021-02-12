@@ -1,7 +1,8 @@
 # Chapter 3: Model-Driven Design
 
+[<-- Back](README.mdt)
+
 * Use the domain model to drive the code.
-  * How?
 * A gap can grow between the domain model and the code. Developers run into a domain concept they do not understand or that can't be expressed properly in code. Developers invent their own code models to cover these cases. The code grows farther and farther apart from the domain model.
   * THIS IS DOING IT WRONG
 * Analysis model
@@ -52,4 +53,84 @@
 
 #### Services
 
+* Some 'verbs' in the domain model are behaviours that can't be mapped to entities or value objects.
+* Since we're working in an object-oriented language, we still have to map non-entity behaviours to a code class. 
+* Declare a service object for these kinds of behaviours.
+* No state. 
+* Groups functionality that serves entities and value objects.
+* Encapsulates a concept (the behaviour) clearly separating it from other domain model concepts. 
+* Often involves collaborations between many types of entities/VOs -- which is a good reason to not include these kinds of behaviours in entity/VO classes. 
+* 3 characteristics: 
+  1. The operation performed is a domain concept that doesn't naturally belong to an entity/VO. 
+  2. The operation refers to other objects in the domain (has collaborators)
+  3. No state. 
+* Don't mix domain layer services with infrastructure layer services.
 
+#### Modules
+
+* Group related concepts into components. Don't cross component boundaries.
+* Question: "group related concepts into modules, have the module provide an interface" -- fine, but in code, what does the interface look like? 
+* Way of obtaining high cohesion
+* 2 types of cohesion
+  1. Communicational cohesion: when parts of a module operate on the same data. 
+  2. Functional cohesion: all parts of a module work together to perform a well-defined task. 
+* If an external module is constantly calling multiple objects within a module in a single request, maybe those objects are related and the module should provide an overarching interface for them. 
+
+* 3 patterns for lifecycle management of objects: aggregates, factories, repositories.
+
+#### Aggregates
+
+* The biggest challenge of modelling is generally not to make it complete enough -- it's easy to stuff a bunch of logic in classes -- but to make it simple and understandable and flexible. 
+* Most of the time it's good to eliminate or simplify relations between models. 
+  * Unless they embed a fundamental domain concept.
+* To simplify:
+  1. If a relation can be eliminated, it should be.
+  2. Multiplicity can be eliminated by adding a constraint -- can you formulate a constraint such that only one object can satisfy a relationship rather than many? 
+  3. Bidirectional relationships can often be simplified. e.g., car has engine, engine has car --> car has engine, engine does not necessarily have car. 
+
+* There are cases where it's hard to simplify any futrher. 
+  * Example: banking system, lots of collaborators, needs to be transactioal -- poor relational design can lead to DB contention. 
+* Also need to enforce data invariants -- when data changes on A, this might affect the integrity of B, C, D, ..., so they need to be checked. 
+* In these cases, *define an aggregate*. 
+
+* Aggregate: group of associated objects that are considered a single unit w/r/t data changes. 
+* Each aggregate has a root. The root is an entity. It is the _only_ object accessible from the outside. 
+  * Root can hold references to all the other objects in the aggregate. 
+  * Outside object can only hold reference to the root. 
+* Implication: external objects can't directly change members of the aggregate. The root entity co-ordinates all changes. 
+  * The root can encapsulate enforcement of invariants, relationships, etc. 
+* n.b. compared to e.g., every ActiveRecord model having its own validations, associations, etc. -- a way to centralize that mess. 
+
+* If objects of an aggregate are stored in DB, they should _not be accessible by queries_ -- they should only be accessible by traversing the root entity. 
+* Root entity has _global_ identity; aggregate members have _local_ identity. 
+
+#### Factories
+ 
+* Trying to construct a complex aggregate in a root entity's constructor goes against how constructing things actually works in the real world. An Xbox wouldn't attempt to construct itself. 
+* **Factory**: Encapsulates the process of complex object creation. 
+  * Especially useful for creating aggregates. 
+* Creation must be atomic -- can't leave half-constructed stuff. 
+* When the root is created, we need to create all associated objects subject to _invariants_ -- or else we can't enforce the invariants. 
+* Clients of factories should never reference concrete classes of objects being instantiated. 
+* Don't use a factory when: 
+  1. Construction is not complicated.
+  2. Not creating multiple collaborating objects.
+  3. The client cares about the implemention, e.g. different construction strategies. 
+  4. The class _is_ the type -- no need to choose between concrete implementations. 
+
+#### Repositories
+
+* Problem: To use an object, we need to obtain a reference to it. How do we get a reference to an aggregate root?
+  * If the object we need is an entity, it's probably in the DB. If it's a value object, it's probably obtainable by traversing the root of an entity. 
+    * Problem: DB is infrastructure. We shouldn't access it from non-infrastructure code layers. Accessing it from other layers makes it very hard to swap out or change, and pollutes the other layers with infra code that those layers shouldn't be concerned with. 
+* Solution: use a **repository**: encapsulation of the logic needed to obtain references to objects. 
+* Repository can store references to objects in-memory -- e.g. some value objects, some entities. 
+* Repository can provide interface for accessing other objects, e.g. from the DB. 
+* Repository fits nicely with strategy pattern -- can abstract different persistence strategies and isolate them from client domain model code. 
+* For each type of object that needs global access: 
+  * Create an object that gives illusion of being an in-memory collection of all objects of that type. 
+  * Set up object access via a well-known interface. 
+  * Getters and setters
+  * Methods that select objects based on given criteria
+* Don't mix repository and factory. Factory creates, repository operates on existing. 
+  * Factories are 'pure domain', repositories interact with infrastructure layer. 
