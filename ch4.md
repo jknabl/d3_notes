@@ -1,4 +1,6 @@
-# Refactoring towards deeper insight
+# Chapter 4: Refactoring towards deeper insight
+
+[<-- Back](README.md)
 
 * Refactoring: 'redesign' code to make it better without changing behaviour.
   * Q: what is 'better'? 
